@@ -1,0 +1,385 @@
+# HOWTO
+
+----------------------------------------------------------------------
+
+Explanation of how ALPS scripts work and how to calculate properties related to polarons using different Frohlich models.
+
+The Frohlich models included in ALPS are:
+- Standard Frohlich
+- Standard Frohlich based on Feynman path integrals
+- Generalized Frohlich
+
+The following sections have one or more "#" in front of the section name: the greater the number of "#" the more focused is the subject. In the references to a section or subsection ">" between two sections means that the section on the right is a subsection of that on the left.
+
+The steps of the procedure for the calculation of polaron properties for a subset of materials are the following:
+- Select the material for the calculation. 
+- Get or create input files with the parameter values. ALPS python scripts will go through different folders to check for these files. 
+- Run the calculation: see section "## CALCULATION"
+- Read or re-direct the output as explained in "## OUTPUT"
+
+
+----------------------------------------------------------------------
+
+## HELP
+
+----------------------------------------------------------------------
+
+The following command outputs a list of options that can be used with ALPS
+
+-  python src/alps.py -h
+
+
+----------------------------------------------------------------------
+
+## DEPENDENCIES
+
+----------------------------------------------------------------------
+
+This software package uses the following python dependencies:
+
+- argparse
+- json
+- matplotlib
+- netCDF4
+- numpy
+- pymatgen
+- scipy
+- abipy (optional) only when using the files in "src/extra_files/abinit_effmasses"
+
+To install, the user can use pip or conda
+
+- pip install pymatgen argparse json numpy matplotlib netcdf4 scipy
+
+or
+
+- conda install --channel conda-forge pymatgen argparse json numpy matplotlib netcdf4 scipy
+
+----------------------------------------------------------------------
+
+## INPUTS
+
+----------------------------------------------------------------------
+
+All the options for INPUT are to be used with the options of "## CALCULATIONS". These options by themselves give no output.
+
+----------------------------------------------------------------------
+
+### Selection of the material
+
+----------------------------------------------------------------------
+
+The following explains the commands used to select the materials for calculation, and the mandatory flags. The other options mentioned below as -<other options related to the calculation> will be explained in the "## CALCULATIONS" section.
+
+- python src/alps.py -rf <FILENAME> -<other options related to the calculation>
+- python src/alps.py -m <MPID>  -<other options related to the calculation>
+- python src/alps.py -f <FORMULA> -<other options related to the calculation>
+
+Only one of the above commands is possible. 
+- The option -rf: accepts a file where each line is a Materials Project ID corresponding to the material of interest.
+
+Ex: FILENAME = mpid.dat
+(Inside mpid.dat)
+mp-1137
+mp-2534
+mp-1265
+(End of mpid.dat)
+
+The first element corresponds to LiF, the second to GaAs and the third to MgO.
+For more information about the corresponding ID's to the elements consult the Materials Project website.
+
+- The option -m: implies only one material with its Materials Project's ID as argument.
+- The option -f: ALPS takes in the material's formula and tries to find it in the database (eventually with several resulting polymorphs).
+
+Further down, we detail the -<other options related to the calculation> necessary to execute a calculation.
+All examples below will assume a file named mpid.dat containing the Materials Project IDs, and use the option -rf.
+
+----------------------------------------------------------------------
+
+### Reading parameters necessary for the calculation
+
+----------------------------------------------------------------------
+
+For the different parameters necessary to execute the calculation there are several ways to proceed.
+We will detail the options that can be used to obtain the value of the following parameters.
+
+----------------------------------------------------------------------
+
+#### Dielectric constants
+#### Cell volume 
+#### Number of atoms ( Standard Frohlich only )
+#### Born effective charges ( Standard Frohlich only )
+
+----------------------------------------------------------------------
+
+- Option 1: Working inside the ALPS directory ("Repository" in this Dataverse tree) there should be a folder named "phonon" and inside this folder a json file per material that is added.
+
+The values inside the Dataverse were obtained from Ref [4].
+
+Ex:
+<ALPS directory>/phonon/mp-1137.json
+
+Inside the json file there should be a dictionary with several entries for different type of parameters:
+
+- "dielectric" (dict): for the dielectric constants and BEC which will be another dictionary with the entries:
+--- "eps_total" (2D list): static dielectric constant variable, containing a list with the values
+--- "eps_electronic" (2D list): electronic dielectric constant variable, containing a list with the values
+--- "becs" (3D list): born effective charge matrices (3x3 for the x, y and z directions), for each atom
+
+- "metada" (dict): General information of the crystal and calculations
+--- "structure" (string): Some information on the crystal structure, with a string containing the key word "_cell_volume"+whitespace+volume
+--- "nsites" (int): Number of atoms present in the unit cell
+
+Ex: FILENAME = mp-1137.json
+(Inside mp-1137.json)
+{
+  "dielectric": {
+    "eps_total" : [[ 9.31, 0.0, 0.0] , [ 0.0, 9.31, 0.0], [ 0.0, 0.0, 9.31]],
+    "eps_electronic" : [[ 2.08, 0.0, 0.0], [ 0.0, 2.08, 0.0], [ 0.0, 0.0, 2.08]],
+    "becs" : [[[ 1.05, 0.0, 0.0], [ 0.0, 1.05, 0.0], [ 0.0, 0.0, 1.05]], [[ -1.05, 0.0, 0.0], [ 0.0, -1.05, 0.0], [ 0.0, 0.0, -1.05]]]
+  },
+  "metadata": {
+    "structure" : "_cell_volume 16.02",
+    "nsites" : 2
+  }
+}
+(End of mp-1137.json)
+
+You can copy the necessary files from dataverse database already with all the information with this format.
+
+- Option 2: Files from Materials Projects or other databases.
+
+You can import files from MP or other databases and search for the information to complete the json files in a tree with the same structure as above.
+
+----------------------------------------------------------------------
+
+#### Effective masses
+
+----------------------------------------------------------------------
+
+In this and all the following examples, we will read the materials from a file named "mpid.dat" containing the Materials Project's IDs by using the option -rf.
+
+We will select from which database or user input we choose the effective masses to use for the calculations.
+
+- python src/alps.py -rf mpid.dat -emdb <DB> -<other options related to the calculation> 
+
+where <DB> = abinit or mp. This option is optional. If not mentioned the script will try all the options in order, first abinit and second mp.
+
+NOTE: the mp option related to the Materials Project database is only used as a backup, the two effective masses are calculated differently.
+
+The option -emdb abinit: Inside ALPS directory there should be a folder named "abinit_effmasses" and inside an ABINIT output file named with the Materials Project ID + "_output" which contains the effective masses calculated by ABINIT (Ref [2]). This can be obtained in the dataverse database.
+
+Ex:
+<ALPS directory>/abinit_effmasses/mp-1137_output
+
+The option -emdb mp: Inside ALPS directory there should be a folder named "eff_masses" containing a json file named with the Materials Project ID which contains the effective masses given by Materials Project from MPContribs (Ref [3]). This can be obtained in the dataverse database.
+
+Ex:
+<ALPS directory>/eff_masses/mp-1137.json
+
+
+----------------------------------------------------------------------
+
+## CALCULATIONS
+
+----------------------------------------------------------------------
+
+After preparing all the input files necessary for this calculations, which are:
+
+- phonon/<MPID>.json
+- eff_masses/<MPID>.json or abinit_effmasses/<MPID>_output
+
+where <MPID> is the Materials Project ID of the material. More information in section "## INPUTS > ### Reading parameters necessary for the calculation".
+The choice of material or materials is explained in section "## INPUTS > ### Selection of the material".
+
+Another input file is necessary in case the calculation is for the Generalized Frohlich model:
+
+- q-random-1000/<MPID>/anaddb-<MPID>.out_PHBST.nc
+
+
+
+An important option is the selection of the valence or conduction band for the polaron calculation. You can only select one of the options.
+
+- python src/alps.py -rf mpid.dat -v -<other options related to the calculation> 
+- python src/alps.py -rf mpid.dat -c -<other options related to the calculation> 
+
+The first option is for valence band calculations and the second for conduction band calculations. 
+In the explanation of the different calculations below, we keep the conduction band option.
+
+You can now select the calculation you want to do:
+
+- Standard Frohlich
+- Standard Frohlich based on Feynman path integral
+- Generalized Frohlich
+
+as explained in the following sections.
+
+
+----------------------------------------------------------------------
+
+### Standard Frohlich model
+
+----------------------------------------------------------------------
+
+This section discusses the calculation of the equation (9) and (10) in Reference [1].
+
+The command to run a calculation using the Standard Frohlich model is:
+
+- python src/alps.py -rf mpid.dat -c -sF
+
+where the option -rf mpid.dat is an example to select the materials.
+The option -c is to calculate in the conduction band and -v would be for the valence band.
+
+The output is printed in the text file "standard_frohlich_data_conduction" or "standard_frohlich_data_valence" depending on the chosen band, the file can be found in the directory where you execute the command, or defined with option "-dir", more in "## OUTPUT" section.
+
+The file is divided by lines for each material and by collumns as follow:
+
+- MPID : the Materials Project ID of the material.
+- FORMULA : the formula of the material.
+- EPS_static : The static dielectric constant.
+- EPS_electronic : The electronic dielectric constant.
+- OMEGA_LO : The average frequency of the LO phonons. Check section D in  Ref [1].
+- MSTAR : The effective mass of the material, check Eq. D in Ref[1].
+- ALPHA : The electron-phonon coupling constant strength, check Eq. (3) in Ref [1].
+- ZPR : The zero-point renormalization energy.
+
+----------------------------------------------------------------------
+
+### Standard Frohlich model ( Feynman path integral )
+
+----------------------------------------------------------------------
+
+This section discuss the calculation of the equation (7) in Reference [1].
+ 
+This calculation is similar to the Standard Frohlich model, however, the perturbation is expanded by diagramatic Monte Carlo method, and the option of the calculation is: 
+
+- python src/alps.py -rf mpid.dat -c -sfF
+
+The output is the same as in the previous section "### Standard Frohlich model".
+
+----------------------------------------------------------------------
+
+### Generalized Frohlich model
+
+----------------------------------------------------------------------
+
+This section discusses the calculation of the equation (25) in Reference [1].
+
+The command to run a calculation using the Generalized Frohlich model is:
+
+- python src/alps.py -rf mpid.dat -c -gF
+
+where the option -rf mpid.dat is an example to select the materials.
+The option -c is to calculate in the conduction band and -v would be for the valence band.
+
+There are two output text files: "gFr-<MPID>-conduction.dat" and "<MPID>-data-per-mode-conduction.dat" or "gFr-<MPID>-valence.dat" and "<MPID>-data-per-mode-valence.dat", depending on the chosen band.
+
+where <MPID> is the Materials Project ID of the material.
+
+In the "gFr-<MPID>-conduction.dat" or "gFr-<MPID>-valence.dat" files, there is only one line and the data is split into columns as follow:
+
+- MPID : the Materials Project ID of the material.
+- FORMULA : the formula of the material.
+- AVERAGE_EPSM1 : the average of the inverse of the total dielectric constant, check Eq. (22) in Ref [1].
+- AVERAGE_OMEGAM05 : the average of the inverse of square root of LO phonon frequencies, check Eq. (20) in Ref [1].
+- AVERAGE_MSTAR : the average of the effective mass, check Eq. (23) in Ref [1].
+- AVERAGE_ALPHA : the average of the electron-phonon coupling constante strength, check Eq. (24) in Ref [1].
+- ZPR : the zero-point renormalization energy.
+
+
+In the "<MPID>-data-per-mode-conduction.dat" or "<MPID>-data-per-mode-valence.dat" files, each line corresponds to a different LO phonon mode and the data is split into columns as follow:
+
+- PHONON MODE : the index of the mode of the LO phonon.
+- EPSM1 : the total inverse dielectric constant of the LO phonon mode.
+- OMEGAM05 : the inverse of the square root of the LO phonon mode frequency.
+- ALPHA : the electron-phonon coupling constante strength of the specific LO phonon mode.
+- ZPR : the zero-point renormalization energy of the specific LO phonon mode.
+
+
+----------------------------------------------------------------------
+
+## OUTPUT
+
+----------------------------------------------------------------------
+
+There is an option "-dir" that allows the user to direct the output to a specific directory
+
+- python src/alps.py -rf mpid.dat -<other options related to the calculation> -dir <PATH>
+
+where <PATH> is the location of the directory.
+
+----------------------------------------------------------------------
+
+### Plots
+
+----------------------------------------------------------------------
+
+To plot the output of ALPS you can use
+
+- python src/plot.py --help
+
+which gives the instructions how to use the python script.
+
+The mandatory options are "-sF <FILE ...>" or "-gF <FILE ...>" and not both at same time. You can select multiple files but they should each have a filename containing the band which is related to the data inside the file, "valence" or "conduction".
+
+Ex:
+python -sF standard_frohlich_data_valence
+or
+python -sF standard_frohlich_data_valence standard_frohlich_data_conduction
+
+The options "-y <PROPERTY>" and "-x <PROPERTY>" allow you to select which property is set to the y-axis and x-axis, respectively.
+
+The list of "<PROPERTY>" are:
+
+- ZPR = Zero-point renormalization
+- alpha = el-ph coupling strength
+- mstar = effective mass
+- omega = phonon frequency
+- eps = effective dielectric constant
+
+In case the column does not correspond to the default ones that ALPS outputs, the user can select the column indices with the options "-cx" and "-cy"
+
+Ex:
+python -sF standard_frohlich_data_valence -x alpha -y ZPR -cx 1 -cy 2
+
+
+----------------------------------------------------------------------
+
+## EXTRA
+
+----------------------------------------------------------------------
+
+### Calculation of the effective masses
+
+----------------------------------------------------------------------
+
+NOTE: This is an extra calculation not to be used as comparison with the data we provide but as a possible extra calculation.
+
+Prepare the calculations of the effective masses for the materials that the user is interested in:
+
+- python src/alps.py -rf mpid.dat -gAEM
+
+This command will create a folder named "calc_effmasses" which will contain all the data needed by the scripts that will calculate the effective masses.
+
+Copy the folder "calc_effmasses", "extra_files/abinit_effmasses/flow_effmass.py" and "extra_files/abinit_effmasses/join_files.py" to an cluster or a folder on a personal computer.
+Use abipy (https://abinit.github.io/abipy/installation.html) to calculate the effective masses inside the chosen folder.
+
+- python flow_effmass.py
+
+Then launch abipy runs using abirun.py.
+
+To gather all the important output, at the end of the calculation, launch
+
+- python join_files.py
+
+The files terminated by "_output" can be placed inside the folder "abinit_effmasses" inside ALPS directory.
+
+----------------------------------------------------------------------
+
+# References
+
+----------------------------------------------------------------------
+
+[1] Melo, P. M. M. C. et al, High-throughput analysis of Fröhlich-type polaron models, arXiv:2207.00364 (2022)
+[2] Gonze, X. et al., The Abinit project: Impact, environment and recent developments, Comput. Phys. Commun. 248, 107042 (2020)
+[3] Ricci, F. et al., An ab initio electronic transport database for inorganic materials, doi: 10.1038/sdata.2017.85 (2017)
+[4] Petretto, G. et al., High-throughput Density-Functional Perturbation Theory phonons for inorganic materials, doi: 10.6084/m9.figshare.c.3938023.v1 (2018)
