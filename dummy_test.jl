@@ -1,5 +1,6 @@
 using Statistics
 using LinearAlgebra
+using PolaronMobility
 # 1x3n vector
 row_vector = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
@@ -18,3 +19,11 @@ means = mean(matrix, dims=2)
 
 # Print the result
 println("Mean of each element:", means)
+
+##
+
+MAPI = material(4.9, 24.1, 0.12, 2.25)
+
+p = polaron(MAPI, verbose = true)
+
+p_2 = polaron(MAPI, [1, 100, 200], [1,2,3,4], verbose = true)
