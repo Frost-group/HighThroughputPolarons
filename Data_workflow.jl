@@ -64,11 +64,7 @@ function Feynman_Data()
     CSV.write("Data/Feynman.tsv", df_Feynman, delim='\t', quotechar='"', header=true)
     return df_Feynman
 end
-df_Feynman = Feynman_Data()
-##
-df_Feynman = CSV.read("Data/Feynman.tsv", DataFrame)
 
-##
 function Standard_Data()
     data_standard = CSV.File("LiegeDataset/Results/StandardFrohlich/conduction/standard_froelich_data_conduction")
     name_arr, chem_arr, alpha_arr, ZPR_arr, mass_arr, freq_arr, alpha_standard_arr, res_standard_arr = looping(data_standard)
@@ -79,10 +75,6 @@ function Standard_Data()
     CSV.write("Data/Standard.tsv", df_Standard, delim='\t', quotechar='"', header=true)
     return df_Standard
 end
-df_Standard = Standard_Data()
-##
-
-##
 
 function load_general_data()
     files = readdir("LiegeDataset/Results/GeneralizedFrohlich/conduction")
@@ -97,10 +89,8 @@ function load_general_data()
     dummy_ZPR = []
     for i in 2:1396
         data = CSV.File("LiegeDataset/Results/GeneralizedFrohlich/conduction/" * files[i])
-        print(data)
         name, chem, freq, mass, res_alpha, res_paper = general_val(data)
         mass = mass * mass
-        println(i)
         push!(dummy_name, name)
         push!(dummy_chem, chem)
         append!(dummy_alpha, res_alpha)
@@ -118,37 +108,42 @@ function General_Data()
     CSV.write("Data/General.tsv", df_General, delim='\t', quotechar='"', header=true)
     return df_General
 end
-df_General = General_Data()
-##
-dummy_name = []
-dummy_chem = []
-dummy_result = []
-dummy_reference = []
-dummy_alpha_GFr = []
-dummy_alpha_variational = []
-for i in df_General[:, "Name"]
-    for j in df_Feynman[:, "Name"]
-        if i == j
-            push!(dummy_name, i)
-            push!(dummy_chem, df_General[df_General.Name.==i, "Formula"][1])
-            append!(dummy_alpha_variational, df_Feynman[df_Feynman.Name.==i, "Alpha"])
-            append!(dummy_alpha_GFr, df_General[df_General.Name.==i, "Reference_Alpha"])
-            append!(dummy_result, df_Feynman[df_Feynman.Name.==i, "ZPR"])
-            append!(dummy_reference, df_General[df_General.Name.==i, "Reference_ZPR"])
+
+
+function General_Comparison_Data(df_General)
+
+    dummy_name = []
+    dummy_chem = []
+    dummy_result = []
+    dummy_reference = []
+    dummy_alpha_GFr = []
+    dummy_alpha_variational = []
+    for i in df_General[:, "Name"]
+        for j in df_Feynman[:, "Name"]
+            if i == j
+                push!(dummy_name, i)
+                push!(dummy_chem, df_General[df_General.Name.==i, "Formula"][1])
+                append!(dummy_alpha_variational, df_Feynman[df_Feynman.Name.==i, "Alpha"])
+                append!(dummy_alpha_GFr, df_General[df_General.Name.==i, "Reference_Alpha"])
+                append!(dummy_result, df_Feynman[df_Feynman.Name.==i, "ZPR"])
+                append!(dummy_reference, df_General[df_General.Name.==i, "Reference_ZPR"])
+            end
         end
     end
+
+    Error = (dummy_result - dummy_reference)./dummy_reference * 100
+    column_names = ["Name", "Formula", "Alpha", "Reference_Alpha", "ZPR", "Reference_ZPR", "Error"]
+    df_General_final = DataFrame([dummy_name, dummy_chem, dummy_alpha_variational, dummy_alpha_GFr, dummy_result, dummy_reference, Error], column_names)
+    CSV.write("Data/General_comparison.tsv", df_General_final, delim='\t', quotechar='"', header=true)
+    return df_General_final
 end
-##
-print(dummy_chem[1])
-##
-Error = (dummy_result - dummy_reference)./dummy_reference * 100
-column_names = ["Name", "Formula", "Alpha", "Reference_Alpha", "ZPR", "Reference_ZPR", "Error"]
-df_General_final = DataFrame([dummy_name, dummy_chem, dummy_alpha_variational, dummy_alpha_GFr, dummy_result, dummy_reference, Error], column_names)
-CSV.write("Data/General_comparison.tsv", df_General_final, delim='\t', quotechar='"', header=true)
-##
 
 
-
+##
+df_Feynman = Feynman_Data()
+df_Standard = Standard_Data()
+df_General = General_Data()
+df_General_final = General_Comparison_Data(df_General)
 
 
 
