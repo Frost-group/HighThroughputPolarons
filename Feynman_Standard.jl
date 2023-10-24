@@ -115,6 +115,6 @@ alpha_arr = convert(Array{Float64}, alpha_arr)
 ##
 @gp "set grid" "set key right" alpha_arr error_standard "w l tit 'Pow 0.5'" xlabel = "α", ylabel = "ZPR percentage difference":-
 @gp :- 
-save(term="pngcairo size 1100,700 fontscale 1.6", output="ZPR, α comparison standard.png")
+#save(term="pngcairo size 1100,700 fontscale 1.6", output="ZPR, α comparison standard.png")
 
 ##

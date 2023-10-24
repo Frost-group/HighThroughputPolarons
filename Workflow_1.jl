@@ -58,41 +58,30 @@ function Feynman_Data()
     data = CSV.File("LiegeDataset/Results/StandardFeynmanFrohlich/conduction/standard_feynman_data_conduction.csv")
     name_arr, chem_arr, alpha_arr, ZPR_arr, mass_arr, freq_arr, alpha_paper_arr, res_arr = looping(data)
     error = (ustrip.(ZPR_arr) - res_arr)./res_arr * 100
-    column_names = ["Name", "Formula", "Mass", "Frequency [meV]", "Alpha", "Reference_Alpha", "Reference_ZPR", "ZPR", "Error"]
+    column_names = ["Name", "Formula", "Mass", "Frequency [meV]", "Alpha", "Reference_Alpha", "ZPR", "Reference_ZPR", "Error"]
     df_Feynman = DataFrame([name_arr, chem_arr,  mass_arr, freq_arr, alpha_arr,
-                            alpha_paper_arr, ZPR_arr, res_arr, error], column_names)                
-    CSV.write("Feynman.tsv", df_Feynman, delim='\t', quotechar='"', header=true)
+                            alpha_paper_arr, ustrip.(ZPR_arr), res_arr, error], column_names)                
+    CSV.write("Data/Feynman.tsv", df_Feynman, delim='\t', quotechar='"', header=true)
     return df_Feynman
 end
 df_Feynman = Feynman_Data()
 ##
-df_Feynman = CSV.read("Feynman.tsv", DataFrame)
-function plot_Feynman()
-    scatter(df_Feynman[:, "Alpha"], df_Feynman[:, "Error"], legend=false, xticks = 0:1:30, yguidefontsize=10, xguidefontsize=10, titlefontsize = 10, xlims=(0, 30), ylims=(-5, 5))
-    xlabel!("α")
-    ylabel!("ZPR percentage difference")
-    display(Plots.plot!())
-    savefig("ZPR, α comparison Feynman.png")
-end
-plot_Feynman()
+df_Feynman = CSV.read("Data/Feynman.tsv", DataFrame)
+
 ##
 function Standard_Data()
     data_standard = CSV.File("LiegeDataset/Results/StandardFrohlich/conduction/standard_froelich_data_conduction")
     name_arr, chem_arr, alpha_arr, ZPR_arr, mass_arr, freq_arr, alpha_standard_arr, res_standard_arr = looping(data_standard)
     error = (ustrip.(ZPR_arr) - res_standard_arr)./res_standard_arr * 100
-    column_names = ["Name", "Formula", "Mass", "Frequency [meV]", "Alpha", "Reference_Alpha", "Reference_ZPR", "ZPR", "Error"]
+    column_names = ["Name", "Formula", "Mass", "Frequency [meV]", "Alpha", "Reference_Alpha", "ZPR", "Reference_ZPR", "Error"]
     df_Standard = DataFrame([name_arr, chem_arr,  mass_arr, freq_arr, alpha_arr,
-                            alpha_standard_arr, ZPR_arr, res_standard_arr, error], column_names)                
-    CSV.write("Standard.tsv", df_Standard, delim='\t', quotechar='"', header=true)
+                            alpha_standard_arr, ustrip.(ZPR_arr), res_standard_arr, error], column_names)                
+    CSV.write("Data/Standard.tsv", df_Standard, delim='\t', quotechar='"', header=true)
     return df_Standard
 end
+df_Standard = Standard_Data()
 ##
-df_Standard = CSV.read("Standard.tsv", DataFrame)
-scatter(df_Standard[:, "Alpha"], df_Standard[:, "Error"], legend = false, xticks = 0:1:30, yguidefontsize=10, xguidefontsize=10, titlefontsize = 10, xlims=(0, 30), ylims=(-5, 100))
-xlabel!("α")
-ylabel!("ZPR percentage difference")
-savefig("ZPR, α comparison standard.png")
-display(Plots.plot!())
+
 ##
 
 function load_general_data()
@@ -126,7 +115,7 @@ function General_Data()
     column_names = ["Name", "Formula", "Mass", "Frequency [eV]", "Reference_Alpha", "Reference_ZPR"]
     df_General = DataFrame([name_arr, chem_arr,  mass_arr, freq_arr, alpha_arr,
                             ZPR_arr], column_names)                
-    CSV.write("General.tsv", df_General, delim='\t', quotechar='"', header=true)
+    CSV.write("Data/General.tsv", df_General, delim='\t', quotechar='"', header=true)
     return df_General
 end
 df_General = General_Data()
@@ -141,7 +130,7 @@ for i in df_General[:, "Name"]
     for j in df_Feynman[:, "Name"]
         if i == j
             push!(dummy_name, i)
-            push!(dummy_chem, df_General[df_General.Name.==i, "Formula"])
+            push!(dummy_chem, df_General[df_General.Name.==i, "Formula"][1])
             append!(dummy_alpha_variational, df_Feynman[df_Feynman.Name.==i, "Alpha"])
             append!(dummy_alpha_GFr, df_General[df_General.Name.==i, "Reference_Alpha"])
             append!(dummy_result, df_Feynman[df_Feynman.Name.==i, "ZPR"])
@@ -150,25 +139,51 @@ for i in df_General[:, "Name"]
     end
 end
 ##
+print(dummy_chem[1])
+##
 Error = (dummy_result - dummy_reference)./dummy_reference * 100
 column_names = ["Name", "Formula", "Alpha", "Reference_Alpha", "ZPR", "Reference_ZPR", "Error"]
 df_General_final = DataFrame([dummy_name, dummy_chem, dummy_alpha_variational, dummy_alpha_GFr, dummy_result, dummy_reference, Error], column_names)
+CSV.write("Data/General_comparison.tsv", df_General_final, delim='\t', quotechar='"', header=true)
 ##
+
+
+
+
+
+
+#= function plot_Feynman()
+    scatter(df_Feynman[:, "Alpha"], df_Feynman[:, "Error"], legend=false, xticks = 0:1:30, yguidefontsize=10, xguidefontsize=10, titlefontsize = 10, xlims=(0, 30), ylims=(-5, 5))
+    xlabel!("α")
+    ylabel!("ZPR percentage difference")
+    display(Plots.plot!())
+    savefig("ZPR, α comparison Feynman.png")
+end
+plot_Feynman()
+
+df_Standard = CSV.read("Standard.tsv", DataFrame)
+scatter(df_Standard[:, "Alpha"], df_Standard[:, "Error"], legend = false, xticks = 0:1:30, yguidefontsize=10, xguidefontsize=10, titlefontsize = 10, xlims=(0, 30), ylims=(-5, 100))
+xlabel!("α")
+ylabel!("ZPR percentage difference")
+savefig("ZPR, α comparison standard.png")
+display(Plots.plot!())
+
 #scatter(df_General_final[:, "Alpha"], df_General_final[:, "Error"], legend = false,yguidefontsize=10, xguidefontsize=10, titlefontsize = 10, xlims = [0,30], ylims = [-100, 100])
 scatter(df_General_final[:, "Reference_Alpha"], df_General_final[:, "Error"], legend = false,yguidefontsize=10, xguidefontsize=10, titlefontsize = 10, xlims = [0,30], ylims = [-100, 200])
 xlabel!("α (Feynman)")
 ylabel!("ZPR percentage difference")
 savefig("ZPR, α comparison general Feynman α.png")
 display(Plots.plot!())
-##
+
 scatter(df_General_final[:, "Alpha"], df_General_final[:, "Error"], legend = false,yguidefontsize=10, xguidefontsize=10, titlefontsize = 10, xlims = [0,30], ylims = [-100, 200])
 xlabel!("α (General)")
 ylabel!("ZPR percentage difference")
 savefig("ZPR, α comparison general general α.png")
 display(Plots.plot!())
-##
+
 scatter(df_General_final[:, "Alpha"], df_General_final[:, "Reference_Alpha"], legend = false,yguidefontsize=10, xguidefontsize=10, titlefontsize = 10, xlims = [0,30], ylims = [0,30])
 xlabel!("α (Feynman)")
 ylabel!("α (General)")
 savefig("α comparison.png")
-display(Plots.plot!())
+display(Plots.plot!()) =#
+
