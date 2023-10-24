@@ -7,6 +7,16 @@ using Gnuplot
 using Plots
 using DataFrames
 function load_file(file)
+    """
+    load_file(file)
+    Reads the contents of a file and returns the data.
+
+    # Arguments
+    - `file` (string): The path to the file to be read.
+
+    # Returns
+    - `data` (string): The contents of the file.
+    """
     open(file) do f
         data = read(f)
         return data
@@ -15,11 +25,45 @@ function load_file(file)
 end
 
 function variable_cal(data)
+    """
+    variable_cal(data)
+    The `variable_cal` function takes in a data array as input and returns a modified version of the data array.
+
+    # Arguments
+    - `data` (array): An array containing data elements.
+
+    # Returns
+    A tuple containing the modified elements of the input data array.
+    """
+
     return data[1], data[2], data[3], data[4], data[5] * 0.2417990504024, data[6], data[7], data[8]
 end
 
-
 function looping(data)
+    """
+    looping(data)
+
+    The `looping` function takes in an array of data and iterates over each element.
+    For each element, it calls the `variable_cal` function to calculate some values.
+    It then performs some calculations and creates a material object.
+    If the calculations are successful, it adds the calculated values to separate arrays.
+    If an error occurs during the calculations, it prints an error message.
+    Finally, it returns the arrays containing the calculated values.
+
+    # Arguments
+    - `data` (array): An array containing data elements.
+
+    # Returns
+    - `dummy_name` (array): An array containing the names of the elements in the `data` array.
+    - `dummy_chem` (array): An array containing the chemical properties of the elements in the `data` array.
+    - `dummy_alpha` (array): An array containing the calculated alpha values.
+    - `dummy_ZPR` (array): An array containing the calculated ZPR values.
+    - `dummy_mass` (array): An array containing the calculated mass values.
+    - `dummy_freq` (array): An array containing the calculated frequency values.
+    - `dummy_alpha_paper` (array): An array containing the calculated alpha paper values.
+    - `dummy_res` (array): An array containing the calculated res_paper values.
+    """
+
     dummy_name = []
     dummy_chem = []
     dummy_alpha = []
@@ -55,6 +99,14 @@ function looping(data)
 end
 
 function Feynman_Data()
+    """
+    Feynman_Data() -> DataFrame
+
+    The `Feynman_Data` function reads data from Feynman Frohlich Model data file and passes it to the `looping` function.
+    It then performs calculations on the data and creates a DataFrame.
+    Finally, it writes the DataFrame to a TSV file and returns it.
+    """
+
     data = CSV.File("LiegeDataset/Results/StandardFeynmanFrohlich/conduction/standard_feynman_data_conduction.csv")
     name_arr, chem_arr, alpha_arr, ZPR_arr, mass_arr, freq_arr, alpha_paper_arr, res_arr = looping(data)
     error = (ustrip.(ZPR_arr) - res_arr)./res_arr * 100
@@ -66,6 +118,14 @@ function Feynman_Data()
 end
 
 function Standard_Data()
+    """
+    Standard_Data() -> DataFrame
+
+    The `Standard_Data` function reads data from Standard Frohlich Model data file and passes it to the `looping` function.
+    It then performs calculations on the data and creates a DataFrame.
+    Finally, it writes the DataFrame to a TSV file and returns it.
+    """
+
     data_standard = CSV.File("LiegeDataset/Results/StandardFrohlich/conduction/standard_froelich_data_conduction")
     name_arr, chem_arr, alpha_arr, ZPR_arr, mass_arr, freq_arr, alpha_standard_arr, res_standard_arr = looping(data_standard)
     error = (ustrip.(ZPR_arr) - res_standard_arr)./res_standard_arr * 100
@@ -76,7 +136,15 @@ function Standard_Data()
     return df_Standard
 end
 
-function load_general_data()
+function General_Data()
+    """
+    General_Data() -> DataFrame
+
+    The `General_Data` function reads data from General Frohlich Model data file and passes it to the `looping` function.
+    It then sorts the data and creates a DataFrame.
+    Finally, it writes the DataFrame to a TSV file and returns it.
+    """
+
     files = readdir("LiegeDataset/Results/GeneralizedFrohlich/conduction")
     function general_val(data)
         return data[1][1], data[1][2], data[1][4], data[1][5], data[1][6], data[1][7]
@@ -98,19 +166,20 @@ function load_general_data()
         append!(dummy_freq, freq)
         append!(dummy_ZPR, res_paper)
         end
-    return dummy_name, dummy_chem, dummy_mass, dummy_freq, dummy_alpha, dummy_ZPR
-end
-function General_Data()
-    name_arr, chem_arr, mass_arr, freq_arr, alpha_arr, ZPR_arr = load_general_data()
     column_names = ["Name", "Formula", "Mass", "Frequency [eV]", "Reference_Alpha", "Reference_ZPR"]
-    df_General = DataFrame([name_arr, chem_arr,  mass_arr, freq_arr, alpha_arr,
-                            ZPR_arr], column_names)                
+    df_General = DataFrame([dummy_name, dummy_chem, dummy_mass, dummy_freq, dummy_alpha, dummy_ZPR], column_names)                
     CSV.write("Data/General.tsv", df_General, delim='\t', quotechar='"', header=true)
     return df_General
 end
 
 
 function General_Comparison_Data(df_General)
+    """
+    General_Comparison_Data() -> DataFrame
+
+    This function compares the data of GFM and Variational Approach.
+    Then it writes the DataFrame to a TSV file and returns it.
+    """
 
     dummy_name = []
     dummy_chem = []
@@ -137,9 +206,9 @@ function General_Comparison_Data(df_General)
     CSV.write("Data/General_comparison.tsv", df_General_final, delim='\t', quotechar='"', header=true)
     return df_General_final
 end
-
-
 ##
+
+# Commands for saving data
 df_Feynman = Feynman_Data()
 df_Standard = Standard_Data()
 df_General = General_Data()
