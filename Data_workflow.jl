@@ -36,7 +36,7 @@ function variable_cal(data)
     A tuple containing the modified elements of the input data array.
     """
 
-    return data[1], data[2], data[3], data[4], data[5] * 0.2417990504024, data[6], data[7], data[8]
+    return data[1], data[2], data[3], data[4], data[5] * 0.2417990504024, data[6], data[7], data[8] # constant for unit conversion form meV to THz
 end
 
 function looping(data)
