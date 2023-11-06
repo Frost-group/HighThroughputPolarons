@@ -219,21 +219,27 @@ function multi_mode()
     dummy_alpha = []
     dummy_ZPR = []
     dummy_result = []
-    #for i in 1397:1410
+    for i in 1397:length(files)
     #mp-10086
-    for i in 1405:1405
+    #for i in 1405:1405
         data = CSV.File("LiegeDataset/Results/GeneralizedFrohlich/conduction/" * files[i], delim = "\t") |> DataFrame
         mode, freq, res_alpha, res_paper, area = general_val(data)
         freq = res_paper ./ res_alpha
         non_zero_index = .!isnan.(freq) .& .!isinf.(freq)
+        println(non_zero_index)
         #non_zero_index = Bool[0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1]
-        non_zero_index = Bool[0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0]
+        #non_zero_index = Bool[0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1]
+        for i in 1:length(res_alpha)
+            if res_alpha[i] < 1e-8
+                non_zero_index[i] = 0
+            end
+        end
         freq = freq[non_zero_index]
         res_alpha = res_alpha[non_zero_index]
         #res_paper = res_paper[non_zero_index]
         freq_actual = -freq * 0.2417990504024
         println(non_zero_index)
-        println(files[i], freq_actual, res_alpha, res_paper)
+        println(i, files[i], freq_actual, res_alpha, res_paper)
 
         if length(freq) == 1
             p = polaron(res_alpha[1], ω = freq_actual[1], β0 = ħ/kB*1e12*2π, v_guesses = 3.0001, w_guesses = 2.999)
