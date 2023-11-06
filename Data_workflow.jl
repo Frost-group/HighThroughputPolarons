@@ -126,7 +126,7 @@ function Standard_Data()
     Finally, it writes the DataFrame to a TSV file and returns it.
     """
 
-    data_standard = CSV.File("LiegeDataset/Results/StandardFrohlich/conduction/standard_froelich_data_conduction")
+    data_standard = CSV.File("LiegeDataset/Results/StandardFrohlich/conduction/standard_froelich_data_conduction.csv")
     name_arr, chem_arr, alpha_arr, ZPR_arr, mass_arr, freq_arr, alpha_standard_arr, res_standard_arr = looping(data_standard)
     error = (ustrip.(ZPR_arr) - res_standard_arr)./res_standard_arr * 100
     column_names = ["Name", "Formula", "Mass", "Frequency [meV]", "Alpha", "Reference_Alpha", "ZPR", "Reference_ZPR", "Error"]
@@ -166,7 +166,7 @@ function General_Data()
         append!(dummy_freq, freq)
         append!(dummy_ZPR, res_paper)
         end
-    column_names = ["Name", "Formula", "Mass", "Frequency [eV]", "Reference_Alpha", "Reference_ZPR"]
+    column_names = ["Name", "Formula", "Mass", "Frequency [meV]", "Reference_Alpha", "Reference_ZPR"]
     df_General = DataFrame([dummy_name, dummy_chem, dummy_mass, dummy_freq, dummy_alpha, dummy_ZPR], column_names)                
     CSV.write("Data/General.tsv", df_General, delim='\t', quotechar='"', header=true)
     return df_General
@@ -207,8 +207,64 @@ function General_Comparison_Data(df_General)
     return df_General_final
 end
 ##
+function multi_mode()
+    ħ = 1.054571817e-34
+    kB = 1.380649e-23
+    files = readdir("LiegeDataset/Results/GeneralizedFrohlich/conduction")
+    function general_val(data)
+        return data[:, 1], data[:, 3], data[:, 4], data[:, 5], data[:, 6]
+    end
+    dummy_name = []
+    dummy_freq = []
+    dummy_alpha = []
+    dummy_ZPR = []
+    dummy_result = []
+    #for i in 1397:1410
+    #mp-10086
+    for i in 1405:1405
+        data = CSV.File("LiegeDataset/Results/GeneralizedFrohlich/conduction/" * files[i], delim = "\t") |> DataFrame
+        mode, freq, res_alpha, res_paper, area = general_val(data)
+        freq = res_paper ./ res_alpha
+        non_zero_index = .!isnan.(freq) .& .!isinf.(freq)
+        #non_zero_index = Bool[0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1]
+        non_zero_index = Bool[0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0]
+        freq = freq[non_zero_index]
+        res_alpha = res_alpha[non_zero_index]
+        #res_paper = res_paper[non_zero_index]
+        freq_actual = -freq * 0.2417990504024
+        println(non_zero_index)
+        println(files[i], freq_actual, res_alpha, res_paper)
 
-# Commands for saving data
+        if length(freq) == 1
+            p = polaron(res_alpha[1], ω = freq_actual[1], β0 = ħ/kB*1e12*2π, v_guesses = 3.0001, w_guesses = 2.999)
+        elseif length(freq) == 0
+            break
+            
+        else
+            p = polaron(res_alpha', ω = freq_actual, β0 = ħ/kB*1e12*2π, v_guesses = 3.0001, w_guesses = 2.999)
+        end
+        addunits!(p)
+        ZPR = p.F0 |> u"meV"
+        ZPR = ustrip(ZPR)
+        parts = split(files[i], '-')
+        name = join(parts[1:2], '-')
+        push!(dummy_name, name)
+        append!(dummy_alpha, sum(res_alpha))
+        append!(dummy_freq, (sum(freq)*(4 * pi * area[1]))^(-2))
+        append!(dummy_result, ZPR)
+        append!(dummy_ZPR, sum(res_paper))
+
+    end
+    
+    column_names = ["Name", "Frequency [meV]", "ZPR", "Reference_Alpha", "Reference_ZPR"]
+    df_General = DataFrame([dummy_name, dummy_freq, dummy_result, dummy_alpha, dummy_ZPR], column_names)                
+    CSV.write("Data/multi_mode.tsv", df_General, delim='\t', quotechar='"', header=true)
+    return df_General
+end
+#%%
+df_multimode = multi_mode()
+#%%
+1# Commands for saving data
 df_Feynman = Feynman_Data()
 df_Standard = Standard_Data()
 df_General = General_Data()
