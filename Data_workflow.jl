@@ -219,13 +219,13 @@ function multi_mode()
     dummy_alpha = []
     dummy_ZPR = []
     dummy_result = []
-    for i in 1397:length(files)
+    #for i in 1397:length(files)
     #mp-10086
-    #for i in 1405:1405
+    for i in 2084
         data = CSV.File("LiegeDataset/Results/GeneralizedFrohlich/conduction/" * files[i], delim = "\t") |> DataFrame
         mode, freq, res_alpha, res_paper, area = general_val(data)
         freq = res_paper ./ res_alpha
-        non_zero_index = .!isnan.(freq) .& .!isinf.(freq)
+        non_zero_index = .!isnan.(freq) .& .!isinf.(freq) .& (freq .!= 0)
         println(non_zero_index)
         #non_zero_index = Bool[0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1]
         #non_zero_index = Bool[0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1]
@@ -264,17 +264,17 @@ function multi_mode()
     
     column_names = ["Name", "Frequency [meV]", "ZPR", "Reference_Alpha", "Reference_ZPR"]
     df_General = DataFrame([dummy_name, dummy_freq, dummy_result, dummy_alpha, dummy_ZPR], column_names)                
-    CSV.write("Data/multi_mode.tsv", df_General, delim='\t', quotechar='"', header=true)
+    #CSV.write("Data/multi_mode.tsv", df_General, delim='\t', quotechar='"', header=true)
     return df_General
 end
 #%%
 df_multimode = multi_mode()
 #%%
-1# Commands for saving data
-df_Feynman = Feynman_Data()
+# Commands for saving data
+#= df_Feynman = Feynman_Data()
 df_Standard = Standard_Data()
 df_General = General_Data()
-df_General_final = General_Comparison_Data(df_General)
+df_General_final = General_Comparison_Data(df_General) =#
 
 
 

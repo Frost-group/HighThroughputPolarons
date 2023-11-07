@@ -60,6 +60,8 @@ print(data[4,1])
 #%%
 
 files = readdir("LiegeDataset/Results/GeneralizedFrohlich/conduction")
+println(files[2084])
+#%%
 data = CSV.File("LiegeDataset/Results/GeneralizedFrohlich/conduction/" * files[1397], delim = "\t") |> DataFrame
 println(data[:,2])
 #%%
@@ -77,3 +79,9 @@ println(data[:,2])
 (0.175198 * 4 * pi)^(-2) 
 
 print(0 / 0)
+#%%
+data = CSV.File("multi_mode.tsv") |> DataFrame
+Error = (data[:,3] - data[:,5])./data[:,5] * 100
+column_name = "Error"  # Replace with the actual column name
+data.new_column = Error
+CSV.write("multi_mode.tsv", DataFrame(data), delim='\t', append=false)
