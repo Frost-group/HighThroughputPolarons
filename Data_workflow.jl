@@ -219,9 +219,9 @@ function multi_mode()
     dummy_alpha = []
     dummy_ZPR = []
     dummy_result = []
-    #for i in 1397:length(files)
+    for i in 1396:length(files)
     #mp-10086
-    for i in 2084
+    #for i in 2084
         data = CSV.File("LiegeDataset/Results/GeneralizedFrohlich/conduction/" * files[i], delim = "\t") |> DataFrame
         mode, freq, res_alpha, res_paper, area = general_val(data)
         freq = res_paper ./ res_alpha
@@ -240,14 +240,14 @@ function multi_mode()
         freq_actual = -freq * 0.2417990504024
         println(non_zero_index)
         println(i, files[i], freq_actual, res_alpha, res_paper)
-
         if length(freq) == 1
             p = polaron(res_alpha[1], ω = freq_actual[1], β0 = ħ/kB*1e12*2π, v_guesses = 3.0001, w_guesses = 2.999)
+            #p = polaron(res_alpha[1], 0, ω = freq_actual[1], β0 = ħ/kB*1e12*2π, v_guesses = 3.0001, w_guesses = 2.999)
         elseif length(freq) == 0
-            break
-            
+            return
         else
             p = polaron(res_alpha', ω = freq_actual, β0 = ħ/kB*1e12*2π, v_guesses = 3.0001, w_guesses = 2.999)
+            #p = polaron(res_alpha', 0, ω = freq_actual, β0 = ħ/kB*1e12*2π, v_guesses = 3.0001, w_guesses = 2.999)
         end
         addunits!(p)
         ZPR = p.F0 |> u"meV"
@@ -262,9 +262,9 @@ function multi_mode()
 
     end
     
-    column_names = ["Name", "Frequency [meV]", "ZPR", "Reference_Alpha", "Reference_ZPR"]
-    df_General = DataFrame([dummy_name, dummy_freq, dummy_result, dummy_alpha, dummy_ZPR], column_names)                
-    #CSV.write("Data/multi_mode.tsv", df_General, delim='\t', quotechar='"', header=true)
+    column_names = ["Name", "Frequency [meV]", "ZPR [meV]", "Reference_Alpha", "Reference_ZPR [meV]"]
+    df_General = DataFrame([[name], [round(sum(freq_actual), digits=6)], [round(sum(ZPR), digits=6)], [round(sum(res_alpha), digits=6)], [round(sum(res_paper), digits=6)]], column_names)         
+    CSV.write("Data/multi_mode.tsv", df_General, delim='\t', quotechar='"', header=true)
     return df_General
 end
 #%%

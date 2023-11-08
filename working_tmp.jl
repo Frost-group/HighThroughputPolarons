@@ -60,7 +60,11 @@ print(data[4,1])
 #%%
 
 files = readdir("LiegeDataset/Results/GeneralizedFrohlich/conduction")
-println(files[2084])
+for element in files[1396: 1396 + 50]
+    println(element)
+end
+print(length(files[1396: end]))
+#indices = find(x -> x = "mp-66-data-per-mode-conduction.dat", files)
 #%%
 data = CSV.File("LiegeDataset/Results/GeneralizedFrohlich/conduction/" * files[1397], delim = "\t") |> DataFrame
 println(data[:,2])
@@ -85,3 +89,4 @@ Error = (data[:,3] - data[:,5])./data[:,5] * 100
 column_name = "Error"  # Replace with the actual column name
 data.new_column = Error
 CSV.write("multi_mode.tsv", DataFrame(data), delim='\t', append=false)
+#%%
