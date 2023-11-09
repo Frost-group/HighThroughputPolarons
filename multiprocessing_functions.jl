@@ -1,26 +1,22 @@
-using Distributed
-num_processes = 10
-#@everywhere cd("F:/OneDrive - Imperial College London/My Stuff/Imperial College/Year 5/Polaron/HighThroughputPolarons")
-# Start local worker processes
-addprocs(num_processes)
+using PolaronMobility
+using Statistics
+using LinearAlgebra
+using CSV
+using Unitful
+using Gnuplot
+using Plots
+using DataFrames
 
-@everywhere using PolaronMobility
-@everywhere using Statistics
-@everywhere using LinearAlgebra
-@everywhere using CSV
-@everywhere using Unitful
-@everywhere using Gnuplot
-@everywhere using Plots
-@everywhere using DataFrames
 
-@everywhere files = readdir("LiegeDataset/Results/GeneralizedFrohlich/conduction")
-@everywhere function general_val(data)
+files = readdir("LiegeDataset/Results/GeneralizedFrohlich/conduction")
+function general_val(data)
     return data[:, 1], data[:, 3], data[:, 4], data[:, 5], data[:, 6]
 end
 column_names = ["Name", "Frequency [meV]", "ZPR [meV]", "Reference_Alpha", "Reference_ZPR [meV]"]
 df_General = DataFrame([[], [], [], [], []], column_names)                
 CSV.write("Data/multi_mode.tsv", df_General, delim='\t', quotechar='"', header=true)
-@everywhere function trial(file)
+
+function trial(file)
     ħ = 1.054571817e-34
     kB = 1.380649e-23
     data = CSV.File("LiegeDataset/Results/GeneralizedFrohlich/conduction/" * file, delim = "\t") |> DataFrame
@@ -59,17 +55,5 @@ CSV.write("Data/multi_mode.tsv", df_General, delim='\t', quotechar='"', header=t
     df_General = DataFrame([[name], [round(sum(freq_actual), digits=6)], [round(sum(ZPR), digits=6)], [round(sum(res_alpha), digits=6)], [round(sum(res_paper), digits=6)]], column_names)                
     #CSV.write("Data/multi_mode.tsv", df_General, delim='\t', quotechar='"', header=true)
     #CSV.write("Data/multi_mode_2/$name.tsv", df_General, delim='\t', quotechar='"',  header=true)
-    CSV.write("Data/multi_mode_zero_K/$name.tsv", df_General, delim='\t', quotechar='"',  header=true)
+    #CSV.write("Data/multi_mode_zero_K/$name.tsv", df_General, delim='\t', quotechar='"',  header=true)
 end
-
-
-#@time @sync @distributed for file in files[1396: end]
-#    trial(file)
-#end
-
-
-@time @sync for file in files[1396: end]
-    trial(file)
-end
-rmprocs(workers())
-

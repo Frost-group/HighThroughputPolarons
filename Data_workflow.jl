@@ -82,6 +82,8 @@ function looping(data)
             ZPR = p.F0 |> u"meV"
             alpha = p.α
             freq = freq / 0.2417990504024
+            name = replace(name, " " => "")
+            chem = replace(chem, " " => "")
             push!(dummy_name, name)
             push!(dummy_chem, chem)
             append!(dummy_alpha, alpha)
@@ -159,6 +161,8 @@ function General_Data()
         data = CSV.File("LiegeDataset/Results/GeneralizedFrohlich/conduction/" * files[i])
         name, chem, freq, mass, res_alpha, res_paper = general_val(data)
         mass = mass * mass
+        name = replace(name, " " => "")
+        chem = replace(chem, " " => "")
         push!(dummy_name, name)
         push!(dummy_chem, chem)
         append!(dummy_alpha, res_alpha)
@@ -171,7 +175,6 @@ function General_Data()
     CSV.write("Data/General.tsv", df_General, delim='\t', quotechar='"', header=true)
     return df_General
 end
-
 
 function General_Comparison_Data(df_General)
     """
@@ -206,8 +209,14 @@ function General_Comparison_Data(df_General)
     CSV.write("Data/General_comparison.tsv", df_General_final, delim='\t', quotechar='"', header=true)
     return df_General_final
 end
-##
+
 function multi_mode()
+    """
+    multi_mode() -> DataFrame
+
+    The `multi_mode` function reads data from General Frohlich Model data file and passes it to the multi-mode polaron calculation (similar to "looping" function).
+    It writes the DataFrame to a TSV file and returns it.
+    """
     ħ = 1.054571817e-34
     kB = 1.380649e-23
     files = readdir("LiegeDataset/Results/GeneralizedFrohlich/conduction")
@@ -267,49 +276,88 @@ function multi_mode()
     CSV.write("Data/multi_mode.tsv", df_General, delim='\t', quotechar='"', header=true)
     return df_General
 end
-#%%
-df_multimode = multi_mode()
-#%%
-# Commands for saving data
-#= df_Feynman = Feynman_Data()
-df_Standard = Standard_Data()
-df_General = General_Data()
-df_General_final = General_Comparison_Data(df_General) =#
 
-
-
-#= function plot_Feynman()
-    scatter(df_Feynman[:, "Alpha"], df_Feynman[:, "Error"], legend=false, xticks = 0:1:30, yguidefontsize=10, xguidefontsize=10, titlefontsize = 10, xlims=(0, 30), ylims=(-5, 5))
-    xlabel!("α")
-    ylabel!("ZPR percentage difference")
-    display(Plots.plot!())
-    savefig("ZPR, α comparison Feynman.png")
+function general_val_multi(data)
+    return data[1][1], data[1][2], data[1][3], data[1][4], data[1][5]
 end
-plot_Feynman()
 
-df_Standard = CSV.read("Standard.tsv", DataFrame)
-scatter(df_Standard[:, "Alpha"], df_Standard[:, "Error"], legend = false, xticks = 0:1:30, yguidefontsize=10, xguidefontsize=10, titlefontsize = 10, xlims=(0, 30), ylims=(-5, 100))
-xlabel!("α")
-ylabel!("ZPR percentage difference")
-savefig("ZPR, α comparison standard.png")
-display(Plots.plot!())
+function multi_mode_sorting(mode = 0)
+    if mode == 0
 
-#scatter(df_General_final[:, "Alpha"], df_General_final[:, "Error"], legend = false,yguidefontsize=10, xguidefontsize=10, titlefontsize = 10, xlims = [0,30], ylims = [-100, 100])
-scatter(df_General_final[:, "Reference_Alpha"], df_General_final[:, "Error"], legend = false,yguidefontsize=10, xguidefontsize=10, titlefontsize = 10, xlims = [0,30], ylims = [-100, 200])
-xlabel!("α (Feynman)")
-ylabel!("ZPR percentage difference")
-savefig("ZPR, α comparison general Feynman α.png")
-display(Plots.plot!())
+        files = readdir("Data/multi_mode")
 
-scatter(df_General_final[:, "Alpha"], df_General_final[:, "Error"], legend = false,yguidefontsize=10, xguidefontsize=10, titlefontsize = 10, xlims = [0,30], ylims = [-100, 200])
-xlabel!("α (General)")
-ylabel!("ZPR percentage difference")
-savefig("ZPR, α comparison general general α.png")
-display(Plots.plot!())
+    elseif mode == 1
 
-scatter(df_General_final[:, "Alpha"], df_General_final[:, "Reference_Alpha"], legend = false,yguidefontsize=10, xguidefontsize=10, titlefontsize = 10, xlims = [0,30], ylims = [0,30])
-xlabel!("α (Feynman)")
-ylabel!("α (General)")
-savefig("α comparison.png")
-display(Plots.plot!()) =#
+        files = readdir("Data/multi_mode_zero_K")
+    end
 
+    dummy_name = []
+    dummy_freq = []
+    dummy_ZPR = []
+    dummy_alpha = []
+    dummy_ZPR_paper = []
+    for i in 1:length(files)
+        
+        if mode == 0
+
+            data = CSV.File("Data/multi_mode/" * files[i])
+
+        elseif mode == 1
+
+            data = CSV.File("Data/multi_mode_zero_K/" * files[i])
+        end
+    name, freq, ZPR, alpha, ZPR_paper = general_val_multi(data)
+    push!(dummy_name, name)
+    append!(dummy_ZPR, ZPR)
+    append!(dummy_alpha, alpha)
+    append!(dummy_freq, freq)
+    append!(dummy_ZPR_paper, ZPR_paper)
+    end
+
+    column_names = ["Name", "Frequency [meV]", "ZPR [meV]", "Reference_Alpha", "Reference_ZPR [meV]"]
+    df_multi_mode = DataFrame([dummy_name, dummy_freq, dummy_ZPR, dummy_alpha, dummy_ZPR_paper], column_names)      
+    if mode == 0
+
+        CSV.write("Data/multi_mode.tsv", df_multi_mode, delim='\t', quotechar='"', header=true)
+
+    elseif mode == 1
+
+        CSV.write("Data/multi_mode_zero_K.tsv", df_multi_mode, delim='\t', quotechar='"', header=true)
+    end   
+
+    return df_multi_mode
+end
+
+function multi_single_comparison()
+    data_multi = CSV.File("Data/multi_mode.tsv")
+    data_single = CSV.File("Data/Standard.tsv")
+
+    dummy_name = []
+    dummy_ZPR_single = []
+    dummy_alpha_single = []
+    dummy_ZPR_multi = []
+    dummy_alpha_multi = []
+    dummy_error = []
+    for i in data_multi
+        for j in data_single
+            if i[1] == j[1]
+
+                name, ZPR_multi, ZPR_single, α_multi, α_single = i[1], i[3], j[7], i[4], j[5]
+                error = (ZPR_multi - ZPR_single) / ZPR_single * 100
+                push!(dummy_name, name)
+                append!(dummy_ZPR_single, ZPR_single)
+                append!(dummy_ZPR_multi, ZPR_multi)
+                append!(dummy_alpha_multi, α_multi)
+                append!(dummy_alpha_single, α_single)
+                append!(dummy_error, error)
+            end
+        end
+    end
+    column_names = ["Name", "ZPR_multi", "ZPR_single", "α_multi", "α_single", "Error"]
+    df = DataFrame([dummy_name, dummy_ZPR_single, dummy_ZPR_multi, dummy_alpha_single, dummy_alpha_multi, dummy_error], column_names)
+    CSV.write("Data/single_multi_comparison.tsv", df, delim='\t', quotechar='"', header=true)
+    return df
+end
+# Commands for saving data
+
+#df_multimode = multi_mode() # Too long to calculate! Use multiprocessing unit to do so.
