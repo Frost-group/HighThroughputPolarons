@@ -4,7 +4,6 @@ using LinearAlgebra
 using CSV
 using Unitful
 using Gnuplot
-using Plots
 using DataFrames
 function load_file(file)
     """
@@ -228,9 +227,9 @@ function multi_mode()
     dummy_alpha = []
     dummy_ZPR = []
     dummy_result = []
-    for i in 1396:length(files)
+    #for i in 1396:length(files)
     #mp-10086
-    #for i in 2084
+    for i in 1405
         data = CSV.File("LiegeDataset/Results/GeneralizedFrohlich/conduction/" * files[i], delim = "\t") |> DataFrame
         mode, freq, res_alpha, res_paper, area = general_val(data)
         freq = res_paper ./ res_alpha
@@ -250,12 +249,12 @@ function multi_mode()
         println(non_zero_index)
         println(i, files[i], freq_actual, res_alpha, res_paper)
         if length(freq) == 1
-            p = polaron(res_alpha[1], ω = freq_actual[1], β0 = ħ/kB*1e12*2π, v_guesses = 3.0001, w_guesses = 2.999)
+            p = polaron(res_alpha[1], ω = freq_actual[1], β0 = ħ/kB*1e12*2π)
             #p = polaron(res_alpha[1], 0, ω = freq_actual[1], β0 = ħ/kB*1e12*2π, v_guesses = 3.0001, w_guesses = 2.999)
         elseif length(freq) == 0
             return
         else
-            p = polaron(res_alpha', ω = freq_actual, β0 = ħ/kB*1e12*2π, v_guesses = 3.0001, w_guesses = 2.999)
+            p = polaron(res_alpha', ω = freq_actual, β0 = ħ/kB*1e12*2π)
             #p = polaron(res_alpha', 0, ω = freq_actual, β0 = ħ/kB*1e12*2π, v_guesses = 3.0001, w_guesses = 2.999)
         end
         addunits!(p)
@@ -272,8 +271,8 @@ function multi_mode()
     end
     
     column_names = ["Name", "Frequency [meV]", "ZPR [meV]", "Reference_Alpha", "Reference_ZPR [meV]"]
-    df_General = DataFrame([[name], [round(sum(freq_actual), digits=6)], [round(sum(ZPR), digits=6)], [round(sum(res_alpha), digits=6)], [round(sum(res_paper), digits=6)]], column_names)         
-    CSV.write("Data/multi_mode.tsv", df_General, delim='\t', quotechar='"', header=true)
+    df_General = DataFrame([dummy_name, dummy_freq, dummy_result, dummy_alpha, dummy_ZPR], column_names)         
+    CSV.write("Data/multi_mode_test.tsv", df_General, delim='\t', quotechar='"', header=true)
     return df_General
 end
 
@@ -354,10 +353,85 @@ function multi_single_comparison()
         end
     end
     column_names = ["Name", "ZPR_multi", "ZPR_single", "α_multi", "α_single", "Error"]
-    df = DataFrame([dummy_name, dummy_ZPR_single, dummy_ZPR_multi, dummy_alpha_single, dummy_alpha_multi, dummy_error], column_names)
+    df = DataFrame([dummy_name, dummy_ZPR_multi, dummy_ZPR_single, dummy_alpha_multi, dummy_alpha_single, dummy_error], column_names)
     CSV.write("Data/single_multi_comparison.tsv", df, delim='\t', quotechar='"', header=true)
     return df
 end
-# Commands for saving data
 
-#df_multimode = multi_mode() # Too long to calculate! Use multiprocessing unit to do so.
+
+function multi_mode_sorting_vw(mode = 0)
+    if mode == 0
+
+        files = readdir("Data/multi_mode_vw")
+
+    elseif mode == 1
+
+        files = readdir("Data/multi_mode_zero_K_vw")
+    end
+
+    dummy_name = []
+    dummy_freq = []
+    dummy_ZPR = []
+    dummy_alpha = []
+    dummy_ZPR_paper = []
+    for i in 1:length(files)
+        
+        if mode == 0
+
+            data = CSV.File("Data/multi_mode_vw/" * files[i])
+
+        elseif mode == 1
+
+            data = CSV.File("Data/multi_mode_zero_K_vw/" * files[i])
+        end
+    name, freq, ZPR, alpha, ZPR_paper = general_val_multi(data)
+    push!(dummy_name, name)
+    append!(dummy_ZPR, ZPR)
+    append!(dummy_alpha, alpha)
+    append!(dummy_freq, freq)
+    append!(dummy_ZPR_paper, ZPR_paper)
+    end
+
+    column_names = ["Name", "Frequency [meV]", "ZPR [meV]", "Reference_Alpha", "Reference_ZPR [meV]"]
+    df_multi_mode = DataFrame([dummy_name, dummy_freq, dummy_ZPR, dummy_alpha, dummy_ZPR_paper], column_names)      
+    if mode == 0
+
+        CSV.write("Data/multi_mode_vw.tsv", df_multi_mode, delim='\t', quotechar='"', header=true)
+
+    elseif mode == 1
+
+        CSV.write("Data/multi_mode_zero_K_vw.tsv", df_multi_mode, delim='\t', quotechar='"', header=true)
+    end   
+
+    return df_multi_mode
+end
+
+function single_mobility(T = 300)
+    data = CSV.File("LiegeDataset/Results/StandardFrohlich/conduction/standard_froelich_data_conduction.csv")
+    dummy_name = []
+    dummy_mobility = []
+    dummy_alpha = []
+    for i in 1:length(data)
+        name, chem, eps_s, eps_o, freq, mass, res_alpha, res_paper = variable_cal(data[i])
+        mass = mass * mass
+        mat = material(eps_o, eps_s, mass, freq)
+        try
+            p = polaron(mat, T, v_guesses = 3.0001, w_guesses = 2.999 ,verbose = false)
+            addunits!(p)
+            alpha = p.α
+            mobility = p.μ |> u"cm^2/V/s"
+            name = replace(name, " " => "")
+            push!(dummy_name, name)
+            append!(dummy_alpha, alpha)
+            append!(dummy_mobility, mobility)
+        catch e
+            # Catch and handle the error
+            println("An error occurred: ", e, i, name)
+        end
+        end
+
+    column_names = ["Name", "Alpha", "Mobility"]
+    df = DataFrame([dummy_name, dummy_alpha, ustrip.(dummy_mobility)], column_names)                
+    CSV.write("Data/single_mode_mobility_$T.tsv", df, delim='\t', quotechar='"', header=true)
+    return df
+end
