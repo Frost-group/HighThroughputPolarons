@@ -111,7 +111,7 @@ function Feynman_Data()
     data = CSV.File("LiegeDataset/Results/StandardFeynmanFrohlich/conduction/standard_feynman_data_conduction.csv")
     name_arr, chem_arr, alpha_arr, ZPR_arr, mass_arr, freq_arr, alpha_paper_arr, res_arr = looping(data)
     error = (ustrip.(ZPR_arr) - res_arr)./res_arr * 100
-    column_names = ["Name", "Formula", "Mass", "Frequency [meV]", "Alpha", "Reference_Alpha", "ZPR", "Reference_ZPR", "Error"]
+    column_names = ["Name", "Formula", "Mass (meV)", "Frequency (meV)", "Alpha", "Reference_Alpha", "ZPR (meV)", "Reference_ZPR (meV)", "Error"]
     df_Feynman = DataFrame([name_arr, chem_arr,  mass_arr, freq_arr, alpha_arr,
                             alpha_paper_arr, ustrip.(ZPR_arr), res_arr, error], column_names)                
     CSV.write("Data/Feynman.tsv", df_Feynman, delim='\t', quotechar='"', header=true)
@@ -130,7 +130,7 @@ function Standard_Data()
     data_standard = CSV.File("LiegeDataset/Results/StandardFrohlich/conduction/standard_froelich_data_conduction.csv")
     name_arr, chem_arr, alpha_arr, ZPR_arr, mass_arr, freq_arr, alpha_standard_arr, res_standard_arr = looping(data_standard)
     error = (ustrip.(ZPR_arr) - res_standard_arr)./res_standard_arr * 100
-    column_names = ["Name", "Formula", "Mass", "Frequency [meV]", "Alpha", "Reference_Alpha", "ZPR", "Reference_ZPR", "Error"]
+    column_names = ["Name", "Formula", "Mass (meV)", "Frequency (meV)", "Alpha", "Reference_Alpha", "ZPR (meV)", "Reference_ZPR (meV)", "Error"]
     df_Standard = DataFrame([name_arr, chem_arr,  mass_arr, freq_arr, alpha_arr,
                             alpha_standard_arr, ustrip.(ZPR_arr), res_standard_arr, error], column_names)                
     CSV.write("Data/Standard.tsv", df_Standard, delim='\t', quotechar='"', header=true)
@@ -169,7 +169,7 @@ function General_Data()
         append!(dummy_freq, freq)
         append!(dummy_ZPR, res_paper)
         end
-    column_names = ["Name", "Formula", "Mass", "Frequency [meV]", "Reference_Alpha", "Reference_ZPR"]
+    column_names = ["Name", "Formula", "Mass (meV)", "Frequency (meV)", "Reference_Alpha", "Reference_ZPR (meV)"]
     df_General = DataFrame([dummy_name, dummy_chem, dummy_mass, dummy_freq, dummy_alpha, dummy_ZPR], column_names)                
     CSV.write("Data/General.tsv", df_General, delim='\t', quotechar='"', header=true)
     return df_General
@@ -203,12 +203,14 @@ function General_Comparison_Data(df_General)
     end
 
     Error = (dummy_result - dummy_reference)./dummy_reference * 100
-    column_names = ["Name", "Formula", "Alpha", "Reference_Alpha", "ZPR", "Reference_ZPR", "Error"]
+    column_names = ["Name", "Formula", "Alpha", "Reference_Alpha", "ZPR (meV)", "Reference_ZPR (meV)", "Error"]
     df_General_final = DataFrame([dummy_name, dummy_chem, dummy_alpha_variational, dummy_alpha_GFr, dummy_result, dummy_reference, Error], column_names)
     CSV.write("Data/General_comparison.tsv", df_General_final, delim='\t', quotechar='"', header=true)
     return df_General_final
 end
 
+
+# Function not in use. See multiprocessing_functions.jl
 function multi_mode()
     """
     multi_mode() -> DataFrame
@@ -270,7 +272,7 @@ function multi_mode()
 
     end
     
-    column_names = ["Name", "Frequency [meV]", "ZPR [meV]", "Reference_Alpha", "Reference_ZPR [meV]"]
+    column_names = ["Name", "Average_Frequency (meV)", "ZPR (meV)", "Reference_Alpha", "Reference_ZPR (meV)"]
     df_General = DataFrame([dummy_name, dummy_freq, dummy_result, dummy_alpha, dummy_ZPR], column_names)         
     CSV.write("Data/multi_mode_test.tsv", df_General, delim='\t', quotechar='"', header=true)
     return df_General
@@ -305,15 +307,15 @@ function multi_mode_sorting(mode = 0)
 
             data = CSV.File("Data/multi_mode_zero_K/" * files[i])
         end
-    name, freq, ZPR, alpha, ZPR_paper = general_val_multi(data)
-    push!(dummy_name, name)
-    append!(dummy_ZPR, ZPR)
-    append!(dummy_alpha, alpha)
-    append!(dummy_freq, freq)
-    append!(dummy_ZPR_paper, ZPR_paper)
+        name, freq, ZPR, alpha, ZPR_paper = general_val_multi(data)
+        push!(dummy_name, name)
+        append!(dummy_ZPR, ZPR)
+        append!(dummy_alpha, alpha)
+        append!(dummy_freq, freq)
+        append!(dummy_ZPR_paper, ZPR_paper)
     end
 
-    column_names = ["Name", "Frequency [meV]", "ZPR [meV]", "Reference_Alpha", "Reference_ZPR [meV]"]
+    column_names = ["Name", "Average_Frequency (meV)", "ZPR (meV)", "Reference_Alpha", "Reference_ZPR (meV)"]
     df_multi_mode = DataFrame([dummy_name, dummy_freq, dummy_ZPR, dummy_alpha, dummy_ZPR_paper], column_names)      
     if mode == 0
 
@@ -352,13 +354,13 @@ function multi_single_comparison()
             end
         end
     end
-    column_names = ["Name", "ZPR_multi", "ZPR_single", "α_multi", "α_single", "Error"]
+    column_names = ["Name", "ZPR_multi (meV)", "ZPR_single (meV)", "α_multi", "α_single", "Error"]
     df = DataFrame([dummy_name, dummy_ZPR_multi, dummy_ZPR_single, dummy_alpha_multi, dummy_alpha_single, dummy_error], column_names)
     CSV.write("Data/single_multi_comparison.tsv", df, delim='\t', quotechar='"', header=true)
     return df
 end
 
-
+# Function not in use.
 function multi_mode_sorting_vw(mode = 0)
     if mode == 0
 
@@ -430,8 +432,8 @@ function single_mobility(T = 300)
         end
         end
 
-    column_names = ["Name", "Alpha", "Mobility"]
+    column_names = ["Name", "Alpha", "Mobility (cm^2/V/s)"]
     df = DataFrame([dummy_name, dummy_alpha, ustrip.(dummy_mobility)], column_names)                
     CSV.write("Data/single_mode_mobility_$T.tsv", df, delim='\t', quotechar='"', header=true)
     return df
-end
+end 

@@ -7,6 +7,7 @@ using Unitful
 using Gnuplot
 using Plots
 using DataFrames
+#%%
 include("supplimentary_functions.jl")
 include("multimode_workflow.jl")
 #%%

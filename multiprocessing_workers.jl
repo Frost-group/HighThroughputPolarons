@@ -8,7 +8,7 @@ addprocs(num_processes)
 
 
 @time @sync for file in files[1397: end]
-    trial_with_vw(file)
+    trial(file)
 end
 rmprocs(workers())
 
