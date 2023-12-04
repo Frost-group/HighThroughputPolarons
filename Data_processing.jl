@@ -18,3 +18,4 @@ merged_df = innerjoin(mobility_data, material_data, on=:Name)
 plot(merged_df[:,"Alpha"], merged_df[:,"Mobility"], line=:scatter, xscale=:log10, yscale=:log10, zcolor=merged_df[:,"mass"])
 #%%
 CSV.write("Data/merged_files/mobility_1_material.tsv", merged_df, delim='\t', quotechar='"', header=true)
+#%%

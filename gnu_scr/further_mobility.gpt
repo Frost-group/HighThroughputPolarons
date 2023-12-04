@@ -3,9 +3,27 @@ reset session
 prefix="mass_mobility"
 set xlabel  "α (Single)"
 set ylabel  "Mobility (cmˆ2/V/s)"
-set palette defined (0 "blue", 0.2 "black", 1 "red")
+set palette defined (0 "green", 0.15 "blue", 1 "red")
 set logscale x
 set logscale y
 plot  "Data/merged_files/mobility_1_material.tsv" u 2:3:4 notitle lc palette z
 
 load "gnuplot-render.gpt"
+
+
+reset session
+set terminal pngcairo
+set output 'scatter_plot.png'
+data_file = "Data/merged_files/mobility_1_material_crystal.tsv"
+prefix="mass_mobility_crystal"
+set xlabel  "α (Single)"
+set ylabel  "Mobility (cmˆ2/V/s)"
+set palette rgb 33,13,10
+set logscale x
+set logscale y
+set palette defined (1 'blue', 2 'green', 3 'red', 4 'purple', 5 'orange', 6 'yellow', 7 'cyan', 8 'magenta', 9 'brown', 10 'black')
+unique_groups = system("awk 'NR>1 {print $8}' " . data_file . " | sort -u")
+
+plot for [i=1:words(unique_groups)] \
+    data_file using 2:3:(strcol(8) eq word(unique_groups, i) ? i : 2/3) \
+    with points lc palette pt 7 title word(unique_groups, i)
