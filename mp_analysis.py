@@ -80,10 +80,11 @@ for i, group in enumerate(unique_groups[1:5]):
     plt.xlim(0.001, 100)  
     plt.ylim(0.00001, 10000000)
     plt.xscale('log')
-    plt.yscale('log')
+    plt.yscale('log')   
     ax.scatter(group_data['Alpha'], group_data['Mobility'], label=group, color=colors(i), alpha=0.7, marker='o', s= 10)
     #plt.show()
 ax.legend(unique_groups)
+plt.savefig("plots/Python/mobility_group")
 # Add labels and legend
 
 #plt.scatter(mobility_data["Alpha"], mobility_data["Mobility"])
@@ -91,7 +92,7 @@ ax.legend(unique_groups)
 # %%
 
 
-for i, group in enumerate(unique_groups[:2]):
+for i, group in enumerate(unique_groups):
     fig, ax = plt.subplots()
     print(i, group)
     group_data = df[df['group'] == group]
@@ -104,6 +105,7 @@ for i, group in enumerate(unique_groups[:2]):
     plt.yscale('log')
     ax.scatter(group_data['Alpha'], group_data['Mobility'], label=group, color=colors(i), alpha=0.7, marker='o', s= 10)
     ax.legend(labels = [group])
+    plt.savefig("plots/Python/mobility_%s" % (group))
     #plt.show()
 
 # %%
@@ -128,6 +130,7 @@ for i, group in enumerate(unique_groups):
     ax.scatter(group_data['Alpha'], group_data['Mobility'], label=group, color=colors(i), alpha=0.7, marker='o', s= 10)
     #plt.show()
 ax.legend(unique_groups)
+plt.savefig("plots/Python/mobility_structure")
 # Add labels and legend
 
 #plt.scatter(mobility_data["Alpha"], mobility_data["Mobility"])
@@ -148,5 +151,6 @@ for i, group in enumerate(unique_groups):
     plt.yscale('log')
     ax.scatter(group_data['Alpha'], group_data['Mobility'], label=group, color=colors(i), alpha=0.7, marker='o', s= 10)
     ax.legend(labels = [group])
+    plt.savefig("plots/Python/mobility_%s" % (group))
     plt.show()
 # %%
